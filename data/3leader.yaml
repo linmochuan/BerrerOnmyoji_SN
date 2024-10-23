@@ -1,0 +1,36 @@
+# center_x、center_y：图片的中心x，y轴
+#x1, y1: 检测框左上角的坐标
+#x2, y2: 检测框右下角的坐标
+#c_x 表示检测框的宽度
+#c_y 表示检测框的高度
+#中英文对照见onmyoji_name.yaml
+actions:
+  QingMing_end:
+    x: [center_x, x1, x2]
+    y: [center_y-2*c_y, y1-2*c_y, y2-2*c_y]
+  O_SS_End:
+    x: [center_x, x1, x2]
+    y: [center_y-2*c_y, y1-2*c_y, y2-2*c_y]
+  eat_ghost:
+    x: [center_x, x1, x2]
+    y: [center_y + (3 * c_y), center_y + c_y, center_y + (3 * c_y)]
+  X_pink:
+    x: [center_x, x1, x2]
+    y: [center_y, y1, y2]
+  Y_QueRen:
+    x: [center_x, x1, x2]
+    y: [center_y, y1, y2]
+  win_SL:
+    x: [center_x, x1, x2]
+    y: [center_y, y1, y2]
+  Get_reward:
+    x: [center_x+(1.5*c_x), x1+(1.5*c_x), x2+(1.5*c_x)]
+    y: [center_y, y1, y2]
+  Red_Egg_end:
+    x: [center_x+(1.5*c_x), x1+(1.5*c_x), x2+(1.5*c_x)]
+    y: [center_y, y1, y2]
+  GouXie:
+    special: true
+  Action:
+    x: [center_x, x1, x2]
+    y: [center_y, y1, y2]

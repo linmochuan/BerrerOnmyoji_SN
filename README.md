@@ -1,455 +1,314 @@
-<div align="center">
-  <p>
-    <a align="center" href="https://ultralytics.com/yolov5" target="_blank">
-      <img width="850" src="https://raw.githubusercontent.com/ultralytics/assets/master/yolov5/v70/splash.png"></a>
-  </p>
+# lin RPA
 
-  English | [简体中文](.github/README_cn.md)
-  <br>
-  <div>
-    <a href="https://github.com/ultralytics/yolov5/actions/workflows/ci-testing.yml"><img src="https://github.com/ultralytics/yolov5/actions/workflows/ci-testing.yml/badge.svg" alt="YOLOv5 CI"></a>
-    <a href="https://zenodo.org/badge/latestdoi/264818686"><img src="https://zenodo.org/badge/264818686.svg" alt="YOLOv5 Citation"></a>
-    <a href="https://hub.docker.com/r/ultralytics/yolov5"><img src="https://img.shields.io/docker/pulls/ultralytics/yolov5?logo=docker" alt="Docker Pulls"></a>
-    <br>
-    <a href="https://bit.ly/yolov5-paperspace-notebook"><img src="https://assets.paperspace.io/img/gradient-badge.svg" alt="Run on Gradient"></a>
-    <a href="https://colab.research.google.com/github/ultralytics/yolov5/blob/master/tutorial.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
-    <a href="https://www.kaggle.com/ultralytics/yolov5"><img src="https://kaggle.com/static/images/open-in-kaggle.svg" alt="Open In Kaggle"></a>
-  </div>
+`lin RPA` 是一个面向 Windows 桌面程序的 Python 自动化工具，将屏幕识别、图片模板查找、鼠标操作、Excel 任务编排和 YOLO 模型识别组合在一起。
 
-  <br>
-  <p>
-    YOLOv5 🚀 is the world's most loved vision AI, representing <a href="https://ultralytics.com">Ultralytics</a>
-    open-source research into future vision AI methods, incorporating lessons learned and best practices evolved over thousands of hours of research and development.
-    <br><br>
-    To request a commercial license please complete the form at <a href="https://ultralytics.com/license">Ultralytics Licensing</a>.
-    <br><br>
-  </p>
+当前主界面提供一条执行路线：
 
-  <div align="center">
-    <a href="https://github.com/ultralytics" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-github.png" width="2%" alt="" /></a>
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="2%" alt="" />
-    <a href="https://www.linkedin.com/company/ultralytics" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-linkedin.png" width="2%" alt="" /></a>
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="2%" alt="" />
-    <a href="https://twitter.com/ultralytics" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-twitter.png" width="2%" alt="" /></a>
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="2%" alt="" />
-    <a href="https://www.producthunt.com/@glenn_jocher" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-producthunt.png" width="2%" alt="" /></a>
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="2%" alt="" />
-    <a href="https://youtube.com/ultralytics" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-youtube.png" width="2%" alt="" /></a>
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="2%" alt="" />
-    <a href="https://www.facebook.com/ultralytics" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-facebook.png" width="2%" alt="" /></a>
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="2%" alt="" />
-    <a href="https://www.instagram.com/ultralytics/" style="text-decoration:none;">
-      <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-instagram.png" width="2%" alt="" /></a>
-  </div>
-</div>
+- **Excel 线性任务**：按照 Excel 行顺序查找指定截图，找到后执行该行配置的操作。
 
+Excel 任务运行在后台线程中，主界面不会因为等待图片或执行操作而卡住。停止按钮、窗口关闭和配置的全局快捷键会向后台任务发送停止信号。
 
-## <div align="center">Segmentation ⭐ NEW</div>
+## 一、整体流程
 
-<div align="center">
-<a align="center" href="https://ultralytics.com/yolov5" target="_blank">
-<img width="800" src="https://user-images.githubusercontent.com/26833433/203348073-9b85607b-03e2-48e1-a6ba-fe1c1c31749c.png"></a>
-</div>
+程序从 `lin_RPA.py` 的 `main()` 开始：
 
-Our new YOLOv5 [release v7.0](https://github.com/ultralytics/yolov5/releases/v7.0) instance segmentation models are the fastest and most accurate in the world, beating all current [SOTA benchmarks](https://paperswithcode.com/sota/real-time-instance-segmentation-on-mscoco). We've made them super simple to train, validate and deploy. See full details in our [Release Notes](https://github.com/ultralytics/yolov5/releases/v7.0) and visit our [YOLOv5 Segmentation Colab Notebook](https://github.com/ultralytics/yolov5/blob/master/segment/tutorial.ipynb) for quickstart tutorials.
+```text
+启动 lin_RPA.py
+    |
+    +-- 读取 settings.json、data/*.yaml
+    |
+    +-- 创建 Tkinter 界面并恢复保存的配置
+    |
+    +-- 等待用户启动 Excel 任务
+          |
+          +-- Excel 线性任务
+          |     +-- 校验 Excel 和工作表
+          |     +-- 后台读取任务行
+          |     +-- 循环查找模板图片
+          |     +-- 找到后按顺序执行操作
+          |     +-- 读完后回到第 2 行继续
+          |
+```
 
-<details>
-  <summary>Segmentation Checkpoints</summary>
-
-<br>
-
-We trained YOLOv5 segmentations models on COCO for 300 epochs at image size 640 using A100 GPUs. We exported all models to ONNX FP32 for CPU speed tests and to TensorRT FP16 for GPU speed tests. We ran all speed tests on Google [Colab Pro](https://colab.research.google.com/signup) notebooks for easy reproducibility.
-
-| Model                                                                                              | size<br><sup>(pixels) | mAP<sup>box<br>50-95 | mAP<sup>mask<br>50-95 | Train time<br><sup>300 epochs<br>A100 (hours) | Speed<br><sup>ONNX CPU<br>(ms) | Speed<br><sup>TRT A100<br>(ms) | params<br><sup>(M) | FLOPs<br><sup>@640 (B) |
-|----------------------------------------------------------------------------------------------------|-----------------------|----------------------|-----------------------|-----------------------------------------------|--------------------------------|--------------------------------|--------------------|------------------------|
-| [YOLOv5n-seg](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n-seg.pt)         | 640                   | 27.6                 | 23.4                  | 80:17                                         | **62.7**                       | **1.2**                        | **2.0**            | **7.1**                |
-| [YOLOv5s-seg](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s-seg.pt)         | 640                   | 37.6                 | 31.7                  | 88:16                                         | 173.3                          | 1.4                            | 7.6                | 26.4                   |
-| [YOLOv5m-seg](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5m-seg.pt)         | 640                   | 45.0                 | 37.1                  | 108:36                                        | 427.0                          | 2.2                            | 22.0               | 70.8                   |
-| [YOLOv5l-seg](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5l-seg.pt)         | 640                   | 49.0                 | 39.9                  | 66:43 (2x)                                    | 857.4                          | 2.9                            | 47.9               | 147.7                  |
-| [YOLOv5x-seg](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5x-seg.pt)         | 640                   | **50.7**             | **41.4**              | 62:56 (3x)                                    | 1579.2                         | 4.5                            | 88.8               | 265.7                  |
-
-- All checkpoints are trained to 300 epochs with SGD optimizer with `lr0=0.01` and `weight_decay=5e-5` at image size 640 and all default settings.<br>Runs logged to https://wandb.ai/glenn-jocher/YOLOv5_v70_official
-- **Accuracy** values are for single-model single-scale on COCO dataset.<br>Reproduce by `python segment/val.py --data coco.yaml --weights yolov5s-seg.pt`
-- **Speed** averaged over 100 inference images using a [Colab Pro](https://colab.research.google.com/signup) A100 High-RAM instance. Values indicate inference speed only (NMS adds about 1ms per image). <br>Reproduce by `python segment/val.py --data coco.yaml --weights yolov5s-seg.pt --batch 1`
-- **Export** to ONNX at FP32 and TensorRT at FP16 done with `export.py`. <br>Reproduce by `python export.py --weights yolov5s-seg.pt --include engine --device 0 --half`
-
-</details>
-
-<details>
-  <summary>Segmentation Usage Examples &nbsp;<a href="https://colab.research.google.com/github/ultralytics/yolov5/blob/master/segment/tutorial.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a></summary>
-
-### Train
-YOLOv5 segmentation training supports auto-download COCO128-seg segmentation dataset with `--data coco128-seg.yaml` argument and manual download of COCO-segments dataset with `bash data/scripts/get_coco.sh --train --val --segments` and then `python train.py --data coco.yaml`.
+### 1. 启动阶段
 
 ```bash
-# Single-GPU
-python segment/train.py --model yolov5s-seg.pt --data coco128-seg.yaml --epochs 5 --img 640
-
-# Multi-GPU DDP
-python -m torch.distributed.run --nproc_per_node 4 --master_port 1 segment/train.py --model yolov5s-seg.pt --data coco128-seg.yaml --epochs 5 --img 640 --device 0,1,2,3
+python lin_RPA.py
 ```
 
-### Val
-Validate YOLOv5m-seg accuracy on ImageNet-1k dataset:
-```bash
-bash data/scripts/get_coco.sh --val --segments  # download COCO val segments split (780MB, 5000 images)
-python segment/val.py --weights yolov5s-seg.pt --data coco.yaml --img 640  # validate
+启动时的具体步骤：
+
+1. `rpa_readers.project_root()` 确定资源目录。源码运行时使用当前项目目录，PyInstaller 运行时使用打包目录。
+2. `read_app_config()` 读取 `settings.json` 和 `data/` 下的 YAML 配置。
+3. 从 `settings.json` 读取检测置信度；配置缺失或格式错误时使用默认值 `0.8`。
+4. 读取 `onmyoji.yaml` 的类别名称、`onmyoji_name.yaml` 的中文名称映射和 `3leader.yaml` 的动作配置。
+5. 创建 Tkinter 界面，包括 Excel 路径、工作表、截图目录、置信度、运行时间和控制按钮。
+6. 恢复上次保存的 Excel 路径、截图目录和快捷键。
+7. 如果存在快捷键，则启动全局键盘监听器。
+8. 进入 Tkinter `mainloop()`，等待用户操作。
+
+模块导入不会自动加载模型、启动线程、启动键盘监听或操作鼠标；这些行为只会在明确启动后发生。
+
+## 二、使用教程
+
+点击“开始”后，流程如下：
+
+1. 读取界面中的 Excel 路径和工作表名称。
+2. 检查文件是否存在，并确认工作表有效。
+3. 读取运行时间和置信度，并保存到 `settings.json`。
+4. 创建 `StopController`，用于在线程之间传递停止信号。
+5. 创建 `DesktopOperations`，统一处理图片查找、鼠标和截图。
+6. 创建 `ExcelExecutor`，通过 `start_async()` 放入后台线程。
+7. 从 Excel 第 2 行开始读取任务，每行读取前四列。
+8. C 列填写 `全局查找` 的任务会在整个运行期间持续查找，所有全局任务同时生效。
+9. 普通任务在查找时间内反复调用 `pyautogui.locateOnScreen()` 查找模板图片。
+10. 找到图片后计算图片中心坐标，按中文逗号分割并依次执行操作。
+11. 当前行完成后进入下一行，读完最后一行后重新从第 2 行开始。
+12. 运行时间结束或收到停止信号后，后台线程退出。
+
+### Excel 格式
+
+第 1 行表头，程序从第 2 行开始读取：
+
+| 列 | 名称 | 说明 |
+| --- | --- | --- |
+| A | 图片路径 | 要查找的模板图片路径 |
+| B | 操作指令 | 多条指令使用中文逗号 `，` 分隔 |
+| C | 查找时间 | 单位为秒，留空默认 10 秒；填写 `全局查找` 后持续全局查找 |
+| D | 超时动作 | `skip` 跳过；数字表示跳转到指定行 |
+
+示例：
+
+| 图片路径 | 操作指令 | 查找时间 | 超时动作 |
+| --- | --- | ---: | --- |
+| `data/images/start.png` | `等待=0.5，左键=1` | 10 | `skip` |
+| `data/images/button.png` | `偏移=10/5，二级左键=2` | 8 | `2` |
+| `data/images/notice.png` | `左键=1` | `全局查找` | |
+
+相对路径以项目根目录为基准，也可以填写绝对路径。
+
+### 操作指令
+
+| 指令 | 示例 | 作用 |
+| --- | --- | --- |
+| 等待 | `等待=1.5` | 暂停指定秒数 |
+| 偏移 | `偏移=10/5` | 后续坐标向右 10、向下 5 像素 |
+| 左键单击 | `左键=2` | 在图片中心单击 2 次 |
+| 随机点击 | `二级左键=3` | 在图片区域内随机点击 3 次 |
+| 偏移点击 | `三级左键=10/20/1` | 在中心偏移 `(10,20)` 的位置点击 1 次 |
+| 左键按下 | `左键按下` | 按下左键 |
+| 左键释放 | `左键释放` | 释放左键 |
+| 右键按下 | `右键按下` | 按下右键 |
+| 右键释放 | `右键释放` | 释放右键 |
+| 全屏截图 | `屏幕截图` | 保存当前屏幕 |
+| 区域截图 | `区域屏幕截图=0/0/800/600` | 保存指定区域 |
+
+例如：
+
+```text
+偏移=15/8，等待=0.5，左键按下，等待=1，左键释放
 ```
 
-### Predict
-Use pretrained YOLOv5m-seg.pt to predict bus.jpg:
-```bash
-python segment/predict.py --weights yolov5m-seg.pt --data data/images/bus.jpg
-```
-```python
-model = torch.hub.load('ultralytics/yolov5', 'custom', 'yolov5m-seg.pt')  # load from PyTorch Hub (WARNING: inference not yet supported)
-```
+表示先移动坐标，等待半秒，按下左键，再等待一秒，最后释放左键。
 
-![zidane](https://user-images.githubusercontent.com/26833433/203113421-decef4c4-183d-4a0a-a6c2-6435b33bc5d3.jpg) | ![bus](https://user-images.githubusercontent.com/26833433/203113416-11fe0025-69f7-4874-a0a6-65d0bfe2999a.jpg)
---- |---
+## 三、RPA 功能模块
 
-### Export
-Export YOLOv5s-seg model to ONNX and TensorRT:
-```bash
-python export.py --weights yolov5s-seg.pt --include onnx engine --img 640 --device 0
-```
+RPA 部分将配置管理、Excel 流程编排、屏幕识别、桌面操作、异步执行和停止控制集成到一个 Windows 自动化工具中，可以把“看到指定画面后执行一组操作”的人工流程转换为可重复运行的 Excel 任务。
 
-</details>
+### 1. 图形界面模块
 
+由 `lin_RPA.py` 和 `tkinter` 实现：
 
-## <div align="center">Documentation</div>
+- 选择 Excel 文件和工作表，并刷新工作表列表。
+- 设置图片匹配置信度、运行时长和截图保存目录。
+- 提供开始、停止和窗口关闭操作。
+- 在界面中显示带时间的运行日志，并安全更新后台线程消息。
 
-See the [YOLOv5 Docs](https://docs.ultralytics.com) for full documentation on training, testing and deployment. See below for quickstart examples.
+### 2. 配置和任务读取模块
 
-<details open>
-<summary>Install</summary>
+由 `rpa_readers.py` 实现，集成 `json`、`openpyxl`、`PyYAML` 和 `pathlib`：
 
-Clone repo and install [requirements.txt](https://github.com/ultralytics/yolov5/blob/master/requirements.txt) in a
-[**Python>=3.7.0**](https://www.python.org/) environment, including
-[**PyTorch>=1.7**](https://pytorch.org/get-started/locally/).
+- 读取和保存 `settings.json` 中的 Excel 路径、工作表、置信度、截图目录、快捷键和模型路径。
+- 将置信度限制在 `0.1` 到 `1.0`，配置错误时使用默认值 `0.8`。
+- 读取 Excel 第 2 行开始的 A 到 D 列任务。
+- 支持图片相对路径、绝对路径、用户目录和环境变量展开。
 
-```bash
-git clone https://github.com/ultralytics/yolov5  # clone
-cd yolov5
-pip install -r requirements.txt  # install
-```
+### 3. Excel 流程编排模块
 
-</details>
+由 `rpa_executor.py` 的 `ExcelExecutor` 实现：
 
-<details>
-<summary>Inference</summary>
+- 普通任务根据 A 列图片路径查找屏幕模板。
+- 找到模板后，以匹配区域中心作为操作坐标。
+- B 列支持使用中文逗号分隔的多条操作指令，并按顺序执行。
+- D 列支持跳过当前任务或跳转到指定行。
+- 任务读到末尾后从第 2 行重新开始，适合重复性桌面流程。
 
-YOLOv5 [PyTorch Hub](https://github.com/ultralytics/yolov5/issues/36) inference. [Models](https://github.com/ultralytics/yolov5/tree/master/models) download automatically from the latest
-YOLOv5 [release](https://github.com/ultralytics/yolov5/releases).
+### 4. 图片识别和全局查找模块
 
-```python
-import torch
+由 `rpa_operations.py` 和 `rpa_executor.py` 集成 `PyAutoGUI` 完成：
 
-# Model
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s')  # or yolov5n - yolov5x6, custom
+- 使用 `pyautogui.locateOnScreen()` 查找模板图片。
+- 普通任务只在 C 列指定的查找时间内查找。
+- C 列填写 `全局查找` 后，图片会在程序运行期间持续查找。
+- 可以配置多个全局查找目标，同时处理多个图片。
+- 同一图片持续显示时只触发一次，消失后再次出现才重新执行，避免重复点击。
 
-# Images
-img = 'https://ultralytics.com/images/zidane.jpg'  # or file, Path, PIL, OpenCV, numpy, list
+### 5. 桌面操作模块
 
-# Inference
-results = model(img)
+由 `DesktopOperations` 和 `random_position()` 实现，集成 `PyAutoGUI`、`numpy` 和 `pynput`：
 
-# Results
-results.print()  # or .show(), .save(), .crop(), .pandas(), etc.
-```
+- 鼠标左键、右键按下和释放。
+- 固定坐标点击、重复点击、偏移点击和区域内随机点击。
+- 全屏截图和指定区域截图，并自动创建保存目录。
+- 监听用户配置的停止快捷键。
 
-</details>
+### 6. 异步执行和安全停止模块
 
-<details>
-<summary>Inference with detect.py</summary>
+由 `start_async()` 和 `StopController` 实现，使用 `threading.Thread` 和 `threading.Event`：
 
-`detect.py` runs inference on a variety of sources, downloading [models](https://github.com/ultralytics/yolov5/tree/master/models) automatically from
-the latest YOLOv5 [release](https://github.com/ultralytics/yolov5/releases) and saving results to `runs/detect`.
+- Excel 任务在后台线程运行，Tkinter 主界面保持响应。
+- 停止按钮、窗口关闭和全局快捷键共享同一个停止事件。
+- 普通查找、全局查找、重复点击和任务循环都会检查停止状态。
+- 线程收到停止信号后自然退出，不强制结束进程。
 
-```bash
-python detect.py --source 0  # webcam
-                          img.jpg  # image
-                          vid.mp4  # video
-                          screen  # screenshot
-                          path/  # directory
-                          'path/*.jpg'  # glob
-                          'https://youtu.be/Zgi9g1ksQHc'  # YouTube
-                          'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP stream
-```
+### 7. 日志和错误处理模块
 
-</details>
+- 普通图片查找输出成功、失败和超时信息。
+- 全局查找不输出持续轮询日志，避免日志刷屏。
+- 连续重复的日志消息会合并显示。
+- 置信度、运行时间和路径异常会在启动时提示。
 
-<details>
-<summary>Training</summary>
+### 8. RPA 集成后的实际效果
 
-The commands below reproduce YOLOv5 [COCO](https://github.com/ultralytics/yolov5/blob/master/data/scripts/get_coco.sh)
-results. [Models](https://github.com/ultralytics/yolov5/tree/master/models)
-and [datasets](https://github.com/ultralytics/yolov5/tree/master/data) download automatically from the latest
-YOLOv5 [release](https://github.com/ultralytics/yolov5/releases). Training times for YOLOv5n/s/m/l/x are
-1/2/4/6/8 days on a V100 GPU ([Multi-GPU](https://github.com/ultralytics/yolov5/issues/475) times faster). Use the
-largest `--batch-size` possible, or pass `--batch-size -1` for
-YOLOv5 [AutoBatch](https://github.com/ultralytics/yolov5/pull/5092). Batch sizes shown for V100-16GB.
-
-```bash
-python train.py --data coco.yaml --epochs 300 --weights '' --cfg yolov5n.yaml  --batch-size 128
-                                                                 yolov5s                    64
-                                                                 yolov5m                    40
-                                                                 yolov5l                    24
-                                                                 yolov5x                    16
+```text
+用户在 GUI 设置参数
+    -> 读取 settings.json 和 Excel
+    -> 启动后台 ExcelExecutor
+    -> 普通任务查找图片 / 全局任务持续查找图片
+    -> 找到目标后解析 B 列操作指令
+    -> DesktopOperations 执行鼠标、键盘或截图操作
+    -> 日志反馈执行状态
+    -> 到达运行时长或收到停止信号后退出
 ```
 
-<img width="800" src="https://user-images.githubusercontent.com/26833433/90222759-949d8800-ddc1-11ea-9fa1-1c97eed2b963.png">
+## 四、YOLO 模型能力
 
-</details>
+YOLOv5 模型代码和 `best.pt` 用于目标检测。当前 `lin_RPA.py` 的用户界面只启动 Excel 线性任务；Excel 中 C 列填写 `全局查找` 时，使用图片模板在整个运行期间进行持续全屏查找，不调用 YOLO 类别监听。
 
-<details open>
-<summary>Tutorials</summary>
+仓库仍保留 `GlobalVisionExecutor` 以及 `J1.py`、`W2.py`、`W3.py` 等 YOLO 实验脚本。它们可以加载 `best.pt`，通过 `mss` 截取屏幕、使用 `torch` 推理，并依据 `data/3leader.yaml` 执行类别动作，但不属于当前 RPA 主界面的启动流程。
 
-- [Train Custom Data](https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data)  🚀 RECOMMENDED
-- [Tips for Best Training Results](https://github.com/ultralytics/yolov5/wiki/Tips-for-Best-Training-Results)  ☘️
-  RECOMMENDED
-- [Multi-GPU Training](https://github.com/ultralytics/yolov5/issues/475)
-- [PyTorch Hub](https://github.com/ultralytics/yolov5/issues/36) 🌟 NEW
-- [TFLite, ONNX, CoreML, TensorRT Export](https://github.com/ultralytics/yolov5/issues/251) 🚀
-- [NVIDIA Jetson Nano Deployment](https://github.com/ultralytics/yolov5/issues/9627) 🌟 NEW
-- [Test-Time Augmentation (TTA)](https://github.com/ultralytics/yolov5/issues/303)
-- [Model Ensembling](https://github.com/ultralytics/yolov5/issues/318)
-- [Model Pruning/Sparsity](https://github.com/ultralytics/yolov5/issues/304)
-- [Hyperparameter Evolution](https://github.com/ultralytics/yolov5/issues/607)
-- [Transfer Learning with Frozen Layers](https://github.com/ultralytics/yolov5/issues/1314)
-- [Architecture Summary](https://github.com/ultralytics/yolov5/issues/6998) 🌟 NEW
-- [Roboflow for Datasets, Labeling, and Active Learning](https://github.com/ultralytics/yolov5/issues/4975)  🌟 NEW
-- [ClearML Logging](https://github.com/ultralytics/yolov5/tree/master/utils/loggers/clearml) 🌟 NEW
-- [Deci Platform](https://github.com/ultralytics/yolov5/wiki/Deci-Platform) 🌟 NEW
-- [Comet Logging](https://github.com/ultralytics/yolov5/tree/master/utils/loggers/comet) 🌟 NEW
+## 五、异步和停止机制
 
-</details>
+后台执行结构如下：
 
+```text
+Tkinter 主线程
+    +-- 窗口、按钮、日志
+    +-- start_async()
+          +-- ExcelExecutor
+```
 
-## <div align="center">Integrations</div>
+`StopController` 内部使用 `threading.Event`：
 
-<br>
-<a align="center" href="https://bit.ly/ultralytics_hub" target="_blank">
-<img width="100%" src="https://github.com/ultralytics/assets/raw/master/im/integrations-loop.png"></a>
-<br>
-<br>
+- 点击“停止”时设置事件。
+- 关闭窗口时设置事件并停止键盘监听器。
+- Excel 查找、重复点击和循环过程都会检查事件。
+- Excel 全局图片查找和普通任务循环都会检查事件。
+- 收到信号后线程自然退出，不强制杀死进程。
 
-<div align="center">
-  <a href="https://roboflow.com/?ref=ultralytics">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-roboflow.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="15%" height="0" alt="" />
-  <a href="https://cutt.ly/yolov5-readme-clearml">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-clearml.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="15%" height="0" alt="" />
-  <a href="https://bit.ly/yolov5-readme-comet">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-comet.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="15%" height="0" alt="" />
-  <a href="https://bit.ly/yolov5-deci-platform">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-deci.png" width="10%" /></a>
-</div>
+如果正在执行很长的 `等待=...`，停止会在等待结束后处理。建议把长等待拆成多个短等待。
 
-|Roboflow|ClearML ⭐ NEW|Comet ⭐ NEW|Deci ⭐ NEW|
-|:-:|:-:|:-:|:-:|
-|Label and export your custom datasets directly to YOLOv5 for training with [Roboflow](https://roboflow.com/?ref=ultralytics)|Automatically track, visualize and even remotely train YOLOv5 using [ClearML](https://cutt.ly/yolov5-readme-clearml) (open-source!)|Free forever, [Comet](https://bit.ly/yolov5-readme-comet) lets you save YOLOv5 models, resume training, and interactively visualise and debug predictions|Automatically compile and quantize YOLOv5 for better inference performance in one click at [Deci](https://bit.ly/yolov5-deci-platform)|
+## 六、配置文件
 
+- `best.pt`：YOLO 训练模型。
+- `data/onmyoji.yaml`：模型类别名称，顺序必须和模型类别索引一致。
+- `data/onmyoji_name.yaml`：类别名称到中文名称的映射。
+- `data/3leader.yaml`：识别类别与动作的映射。
+- `settings.json`：程序自动保存的路径、置信度、快捷键等配置；置信度统一从这里读取。
 
-## <div align="center">Ultralytics HUB</div>
+`settings.json` 示例：
 
-[Ultralytics HUB](https://bit.ly/ultralytics_hub) is our ⭐ **NEW** no-code solution to visualize datasets, train YOLOv5 🚀 models, and deploy to the real world in a seamless experience. Get started for **Free** now!
+```json
+{
+    "confidence": 0.8,
+    "excel_path": "D:/rpa/tasks.xlsx",
+    "sheet_name": "Sheet1",
+    "screenshot_path": "D:/rpa/screenshots",
+    "hotkey": ["CTRL", "Q"],
+    "model_path": "best.pt"
+}
+```
 
-<a align="center" href="https://bit.ly/ultralytics_hub" target="_blank">
-<img width="100%" src="https://github.com/ultralytics/assets/raw/master/im/ultralytics-hub.png"></a>
+建议将模板截图放在 `data/images/`，并在 Excel 中使用相对路径，便于项目迁移和打包。
 
+## 七、Python 文件、库和功能
 
-## <div align="center">Why YOLOv5</div>
+本项目中的 Python 文件并非全部都是独立入口。顶层 RPA 文件负责当前自动化程序，`models/`、`utils/`、`classify/` 和 `segment/` 主要属于 YOLOv5 训练、推理和导出框架。
 
-YOLOv5 has been designed to be super easy to get started and simple to learn. We prioritize real-world results.
+### 1. RPA 主程序
 
-<p align="left"><img width="800" src="https://user-images.githubusercontent.com/26833433/155040763-93c22a27-347c-4e3c-847a-8094621d3f4e.png"></p>
-<details>
-  <summary>YOLOv5-P5 640 Figure</summary>
+| 文件 | 主要库 | 实现功能和效果 |
+| --- | --- | --- |
+| `lin_RPA.py` | `tkinter`、`pathlib`、本项目 RPA 模块 | 创建 Windows 图形界面；选择 Excel 和工作表；设置置信度、运行时间、截图目录；启动和停止后台任务。 |
+| `rpa_readers.py` | `json`、`pathlib`、`openpyxl`、`PyYAML` | 读取 `settings.json`、YAML 类别和动作配置；读取 Excel 前四列；解析图片绝对路径和相对路径。 |
+| `rpa_operations.py` | `pyautogui`、`pynput`、`numpy`、`threading` | 统一封装鼠标点击、按键、释放、截图、屏幕模板查找和全局快捷键；用 `threading.Event` 传递停止信号。 |
+| `rpa_executor.py` | `cv2`、`mss`、`numpy`、`threading`、本项目 RPA 模块 | 执行 Excel 线性任务；支持普通图片查找和第三列填写 `全局查找` 的多个持续图片监听；同时保留 YOLO 类别检测执行器。 |
 
-<p align="left"><img width="800" src="https://user-images.githubusercontent.com/26833433/155040757-ce0934a3-06a6-43dc-a979-2edbbd69ea0e.png"></p>
-</details>
-<details>
-  <summary>Figure Notes</summary>
+调用关系如下：
 
-- **COCO AP val** denotes mAP@0.5:0.95 metric measured on the 5000-image [COCO val2017](http://cocodataset.org) dataset over various inference sizes from 256 to 1536.
-- **GPU Speed** measures average inference time per image on [COCO val2017](http://cocodataset.org) dataset using a [AWS p3.2xlarge](https://aws.amazon.com/ec2/instance-types/p3/) V100 instance at batch-size 32.
-- **EfficientDet** data from [google/automl](https://github.com/google/automl) at batch size 8.
-- **Reproduce** by `python val.py --task study --data coco.yaml --iou 0.7 --weights yolov5n6.pt yolov5s6.pt yolov5m6.pt yolov5l6.pt yolov5x6.pt`
+```text
+lin_RPA.py
+    +-- rpa_readers.py       读取配置和 Excel
+    +-- rpa_operations.py    鼠标、截图、停止信号
+    +-- rpa_executor.py      组织查找、循环和操作指令
+```
 
-</details>
+### 2. 顶层独立脚本和旧版程序
 
-### Pretrained Checkpoints
+这些文件保留了项目早期的实验功能。它们通常在导入阶段就会加载模型或创建窗口，使用前应先确认脚本内容和运行环境。
 
-| Model                                                                                                | size<br><sup>(pixels) | mAP<sup>val<br>50-95 | mAP<sup>val<br>50 | Speed<br><sup>CPU b1<br>(ms) | Speed<br><sup>V100 b1<br>(ms) | Speed<br><sup>V100 b32<br>(ms) | params<br><sup>(M) | FLOPs<br><sup>@640 (B) |
-|------------------------------------------------------------------------------------------------------|-----------------------|----------------------|-------------------|------------------------------|-------------------------------|--------------------------------|--------------------|------------------------|
-| [YOLOv5n](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5n.pt)                   | 640                   | 28.0                 | 45.7              | **45**                       | **6.3**                       | **0.6**                        | **1.9**            | **4.5**                |
-| [YOLOv5s](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5s.pt)                   | 640                   | 37.4                 | 56.8              | 98                           | 6.4                           | 0.9                            | 7.2                | 16.5                   |
-| [YOLOv5m](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5m.pt)                   | 640                   | 45.4                 | 64.1              | 224                          | 8.2                           | 1.7                            | 21.2               | 49.0                   |
-| [YOLOv5l](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5l.pt)                   | 640                   | 49.0                 | 67.3              | 430                          | 10.1                          | 2.7                            | 46.5               | 109.1                  |
-| [YOLOv5x](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5x.pt)                   | 640                   | 50.7                 | 68.9              | 766                          | 12.1                          | 4.8                            | 86.7               | 205.7                  |
-|                                                                                                      |                       |                      |                   |                              |                               |                                |                    |                        |
-| [YOLOv5n6](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5n6.pt)                 | 1280                  | 36.0                 | 54.4              | 153                          | 8.1                           | 2.1                            | 3.2                | 4.6                    |
-| [YOLOv5s6](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5s6.pt)                 | 1280                  | 44.8                 | 63.7              | 385                          | 8.2                           | 3.6                            | 12.6               | 16.8                   |
-| [YOLOv5m6](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5m6.pt)                 | 1280                  | 51.3                 | 69.3              | 887                          | 11.1                          | 6.8                            | 35.7               | 50.0                   |
-| [YOLOv5l6](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5l6.pt)                 | 1280                  | 53.7                 | 71.3              | 1784                         | 15.8                          | 10.5                           | 76.8               | 111.4                  |
-| [YOLOv5x6](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5x6.pt)<br>+ [TTA][TTA] | 1280<br>1536          | 55.0<br>**55.8**     | 72.7<br>**72.7**  | 3136<br>-                    | 26.2<br>-                     | 19.4<br>-                      | 140.7<br>-         | 209.8<br>-             |
-
-<details>
-  <summary>Table Notes</summary>
-
-- All checkpoints are trained to 300 epochs with default settings. Nano and Small models use [hyp.scratch-low.yaml](https://github.com/ultralytics/yolov5/blob/master/data/hyps/hyp.scratch-low.yaml) hyps, all others use [hyp.scratch-high.yaml](https://github.com/ultralytics/yolov5/blob/master/data/hyps/hyp.scratch-high.yaml).
-- **mAP<sup>val</sup>** values are for single-model single-scale on [COCO val2017](http://cocodataset.org) dataset.<br>Reproduce by `python val.py --data coco.yaml --img 640 --conf 0.001 --iou 0.65`
-- **Speed** averaged over COCO val images using a [AWS p3.2xlarge](https://aws.amazon.com/ec2/instance-types/p3/) instance. NMS times (~1 ms/img) not included.<br>Reproduce by `python val.py --data coco.yaml --img 640 --task speed --batch 1`
-- **TTA** [Test Time Augmentation](https://github.com/ultralytics/yolov5/issues/303) includes reflection and scale augmentations.<br>Reproduce by `python val.py --data coco.yaml --img 1536 --iou 0.7 --augment`
-
-</details>
+| 文件 | 主要库 | 实现功能和效果 |
+| --- | --- | --- |
+| `J1.py` | `torch`、`opencv-python`、`mss`、`numpy`、`PyAutoGUI`、`PyYAML`、`tkinter`、`pynput`、`pywin32` | 旧版 YOLO 屏幕检测和透明窗口显示；识别游戏目标后按类别执行点击、随机点击或窗口范围内操作，并显示日志。 |
+| `J1-1.py` | `torch`、`opencv-python`、`mss`、`numpy`、`PyAutoGUI`、`PyYAML`、`tkinter`、`pynput`、`pywin32` | `J1.py` 的另一版实验实现，包含 YOLO 持续检测、透明标注窗口、窗口识别和快捷键退出。 |
+| `W2.py` | `torch`、`opencv-python`、`mss`、`numpy`、`PyYAML`、`tkinter`、`pynput` | 旧版队长窗口检测程序；截取屏幕后绘制 YOLO 目标和窗口边框，并针对目标类别执行点击。 |
+| `W3.py` | `torch`、`opencv-python`、`mss`、`numpy`、`PyYAML`、`tkinter`、`pynput` | `W2.py` 的后续实验版本，继续提供实时目标检测、透明窗口标注和快捷键控制。 |
+| `pro.py` | `openpyxl`、`PyAutoGUI`、`numpy`、`pandas`、`tkinter`、`pynput`、标准库 | 早期 Excel 自动化 GUI；按 Excel 行查找图片、等待、点击、截图和跳转，带错误日志、配置保存和快捷键。 |
+| `jc.py` | `torch`、`opencv-python`、`mss`、`numpy`、`Pillow`、`PyYAML`、`tkinter` | YOLO 检测结果可视化实验；在透明全屏窗口中绘制检测框、中文类别和置信度。 |
+| `屏幕.py` | `tkinter`、`pywin32`、`threading`、`math` | 鼠标跟踪工具；获取鼠标所在窗口的标题、类名和矩形坐标，并用透明窗口实时绘制彩色边框。 |
+| `显示文字.py` | `tkinter` | 创建置顶、无边框、透明背景的全屏文字覆盖层，用于在屏幕指定位置显示提示文字。 |
+| `benchmarks.py` | `torch`、`pandas`、`numpy`、`psutil`、YOLOv5 `models` 和 `utils` | 对不同模型格式执行速度和精度基准测试，输出推理时间、文件大小和检测结果。 |
+| `val.py` | `torch`、`numpy`、`tqdm`、YOLOv5 `models` 和 `utils` | 验证目标检测模型；计算 IoU、Precision、Recall、mAP，生成 JSON/TXT 结果和验证图像。 |
+| `export.py` | `torch`、`pandas`、PyTorch Mobile、YOLOv5 `models` 和 `utils` | 将 PyTorch 模型导出为 TorchScript、ONNX、OpenVINO、TensorRT、CoreML、TensorFlow、TFLite 和 PaddlePaddle 等格式。 |
+| `hubconf.py` | `torch`、YOLOv5 `models` | 为 `torch.hub.load()` 提供 `custom`、`yolov5s` 等模型加载入口，支持本地或预训练模型。 |
 
 
-## <div align="center">Classification ⭐ NEW</div>
 
-YOLOv5 [release v6.2](https://github.com/ultralytics/yolov5/releases) brings support for classification model training, validation and deployment! See full details in our [Release Notes](https://github.com/ultralytics/yolov5/releases/v6.2) and visit our [YOLOv5 Classification Colab Notebook](https://github.com/ultralytics/yolov5/blob/master/classify/tutorial.ipynb) for quickstart tutorials.
+## 八、安装、运行和打包
 
-<details>
-  <summary>Classification Checkpoints</summary>
-
-<br>
-
-We trained YOLOv5-cls classification models on ImageNet for 90 epochs using a 4xA100 instance, and we trained ResNet and EfficientNet models alongside with the same default training settings to compare. We exported all models to ONNX FP32 for CPU speed tests and to TensorRT FP16 for GPU speed tests. We ran all speed tests on Google [Colab Pro](https://colab.research.google.com/signup) for easy reproducibility.
-
-| Model                                                                                              | size<br><sup>(pixels) | acc<br><sup>top1 | acc<br><sup>top5 | Training<br><sup>90 epochs<br>4xA100 (hours) | Speed<br><sup>ONNX CPU<br>(ms) | Speed<br><sup>TensorRT V100<br>(ms) | params<br><sup>(M) | FLOPs<br><sup>@224 (B) |
-|----------------------------------------------------------------------------------------------------|-----------------------|------------------|------------------|----------------------------------------------|--------------------------------|-------------------------------------|--------------------|------------------------|
-| [YOLOv5n-cls](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5n-cls.pt)         | 224                   | 64.6             | 85.4             | 7:59                                         | **3.3**                        | **0.5**                             | **2.5**            | **0.5**                |
-| [YOLOv5s-cls](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5s-cls.pt)         | 224                   | 71.5             | 90.2             | 8:09                                         | 6.6                            | 0.6                                 | 5.4                | 1.4                    |
-| [YOLOv5m-cls](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5m-cls.pt)         | 224                   | 75.9             | 92.9             | 10:06                                        | 15.5                           | 0.9                                 | 12.9               | 3.9                    |
-| [YOLOv5l-cls](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5l-cls.pt)         | 224                   | 78.0             | 94.0             | 11:56                                        | 26.9                           | 1.4                                 | 26.5               | 8.5                    |
-| [YOLOv5x-cls](https://github.com/ultralytics/yolov5/releases/download/v6.2/yolov5x-cls.pt)         | 224                   | **79.0**         | **94.4**         | 15:04                                        | 54.3                           | 1.8                                 | 48.1               | 15.9                   |
-|                                                                                                    |
-| [ResNet18](https://github.com/ultralytics/yolov5/releases/download/v6.2/resnet18.pt)               | 224                   | 70.3             | 89.5             | **6:47**                                     | 11.2                           | 0.5                                 | 11.7               | 3.7                    |
-| [ResNet34](https://github.com/ultralytics/yolov5/releases/download/v6.2/resnet34.pt)               | 224                   | 73.9             | 91.8             | 8:33                                         | 20.6                           | 0.9                                 | 21.8               | 7.4                    |
-| [ResNet50](https://github.com/ultralytics/yolov5/releases/download/v6.2/resnet50.pt)               | 224                   | 76.8             | 93.4             | 11:10                                        | 23.4                           | 1.0                                 | 25.6               | 8.5                    |
-| [ResNet101](https://github.com/ultralytics/yolov5/releases/download/v6.2/resnet101.pt)             | 224                   | 78.5             | 94.3             | 17:10                                        | 42.1                           | 1.9                                 | 44.5               | 15.9                   |
-|                                                                                                    |
-| [EfficientNet_b0](https://github.com/ultralytics/yolov5/releases/download/v6.2/efficientnet_b0.pt) | 224                   | 75.1             | 92.4             | 13:03                                        | 12.5                           | 1.3                                 | 5.3                | 1.0                    |
-| [EfficientNet_b1](https://github.com/ultralytics/yolov5/releases/download/v6.2/efficientnet_b1.pt) | 224                   | 76.4             | 93.2             | 17:04                                        | 14.9                           | 1.6                                 | 7.8                | 1.5                    |
-| [EfficientNet_b2](https://github.com/ultralytics/yolov5/releases/download/v6.2/efficientnet_b2.pt) | 224                   | 76.6             | 93.4             | 17:10                                        | 15.9                           | 1.6                                 | 9.1                | 1.7                    |
-| [EfficientNet_b3](https://github.com/ultralytics/yolov5/releases/download/v6.2/efficientnet_b3.pt) | 224                   | 77.7             | 94.0             | 19:19                                        | 18.9                           | 1.9                                 | 12.2               | 2.4                    |
-
-<details>
-  <summary>Table Notes (click to expand)</summary>
-
-- All checkpoints are trained to 90 epochs with SGD optimizer with `lr0=0.001` and `weight_decay=5e-5` at image size 224 and all default settings.<br>Runs logged to https://wandb.ai/glenn-jocher/YOLOv5-Classifier-v6-2
-- **Accuracy** values are for single-model single-scale on [ImageNet-1k](https://www.image-net.org/index.php) dataset.<br>Reproduce by `python classify/val.py --data ../datasets/imagenet --img 224`
-- **Speed** averaged over 100 inference images using a Google [Colab Pro](https://colab.research.google.com/signup) V100 High-RAM instance.<br>Reproduce by `python classify/val.py --data ../datasets/imagenet --img 224 --batch 1`
-- **Export** to ONNX at FP32 and TensorRT at FP16 done with `export.py`. <br>Reproduce by `python export.py --weights yolov5s-cls.pt --include engine onnx --imgsz 224`
-</details>
-</details>
-
-<details>
-  <summary>Classification Usage Examples &nbsp;<a href="https://colab.research.google.com/github/ultralytics/yolov5/blob/master/classify/tutorial.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a></summary>
-
-### Train
-YOLOv5 classification training supports auto-download of MNIST, Fashion-MNIST, CIFAR10, CIFAR100, Imagenette, Imagewoof, and ImageNet datasets with the `--data` argument. To start training on MNIST for example use `--data mnist`.
+安装依赖：
 
 ```bash
-# Single-GPU
-python classify/train.py --model yolov5s-cls.pt --data cifar100 --epochs 5 --img 224 --batch 128
-
-# Multi-GPU DDP
-python -m torch.distributed.run --nproc_per_node 4 --master_port 1 classify/train.py --model yolov5s-cls.pt --data imagenet --epochs 5 --img 224 --device 0,1,2,3
+pip install -r requirements.txt
 ```
 
-### Val
-Validate YOLOv5m-cls accuracy on ImageNet-1k dataset:
+如果依赖文件没有列出当前环境所需包，请补充安装 `torch`、`opencv-python`、`mss`、`pyautogui`、`pynput`、`openpyxl`、`PyYAML` 和 `numpy`。
+
+启动：
+
 ```bash
-bash data/scripts/get_imagenet.sh --val  # download ImageNet val split (6.3G, 50000 images)
-python classify/val.py --weights yolov5m-cls.pt --data ../datasets/imagenet --img 224  # validate
+python lin_RPA.py
 ```
 
-### Predict
-Use pretrained YOLOv5s-cls.pt to predict bus.jpg:
+打包：
+
 ```bash
-python classify/predict.py --weights yolov5s-cls.pt --data data/images/bus.jpg
-```
-```python
-model = torch.hub.load('ultralytics/yolov5', 'custom', 'yolov5s-cls.pt')  # load from PyTorch Hub
+pyinstaller lin_RPA.spec
 ```
 
-### Export
-Export a group of trained YOLOv5s-cls, ResNet and EfficientNet models to ONNX and TensorRT:
-```bash
-python export.py --weights yolov5s-cls.pt resnet50.pt efficientnet_b0.pt --include onnx engine --img 224
-```
-</details>
+打包配置会包含 `best.pt`、`settings.json`、`data/*.yaml` 和 Python 模块。生成目录通常为 `dist/lin_RPA/`，移动程序时复制整个目录，不要只复制 exe 文件。
 
 
-## <div align="center">Environments</div>
-
-Get started in seconds with our verified environments. Click each icon below for details.
-
-<div align="center">
-  <a href="https://bit.ly/yolov5-paperspace-notebook">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-gradient.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="5%" alt="" />
-  <a href="https://colab.research.google.com/github/ultralytics/yolov5/blob/master/tutorial.ipynb">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-colab-small.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="5%" alt="" />
-  <a href="https://www.kaggle.com/ultralytics/yolov5">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-kaggle-small.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="5%" alt="" />
-  <a href="https://hub.docker.com/r/ultralytics/yolov5">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-docker-small.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="5%" alt="" />
-  <a href="https://github.com/ultralytics/yolov5/wiki/AWS-Quickstart">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-aws-small.png" width="10%" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="5%" alt="" />
-  <a href="https://github.com/ultralytics/yolov5/wiki/GCP-Quickstart">
-    <img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/logo-gcp-small.png" width="10%" /></a>
-</div>
 
 
-## <div align="center">Contribute</div>
 
-We love your input! We want to make contributing to YOLOv5 as easy and transparent as possible. Please see our [Contributing Guide](CONTRIBUTING.md) to get started, and fill out the [YOLOv5 Survey](https://ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey) to send us feedback on your experiences. Thank you to all our contributors!
-
-<!-- SVG image from https://opencollective.com/ultralytics/contributors.svg?width=990 -->
-<a href="https://github.com/ultralytics/yolov5/graphs/contributors"><img src="https://github.com/ultralytics/yolov5/releases/download/v1.0/image-contributors-1280.png" /></a>
-
-## <div align="center">Contact</div>
-
-For YOLOv5 bugs and feature requests please visit [GitHub Issues](https://github.com/ultralytics/yolov5/issues). For professional support please [Contact Us](https://ultralytics.com/contact). To request a commercial license please complete the form at [Ultralytics Licensing](https://ultralytics.com/license).
-
-<br>
-<div align="center">
-  <a href="https://github.com/ultralytics" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-github.png" width="3%" alt="" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://www.linkedin.com/company/ultralytics" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-linkedin.png" width="3%" alt="" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://twitter.com/ultralytics" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-twitter.png" width="3%" alt="" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://www.producthunt.com/@glenn_jocher" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-producthunt.png" width="3%" alt="" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://youtube.com/ultralytics" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-youtube.png" width="3%" alt="" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://www.facebook.com/ultralytics" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-facebook.png" width="3%" alt="" /></a>
-  <img src="https://github.com/ultralytics/assets/raw/master/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://www.instagram.com/ultralytics/" style="text-decoration:none;">
-    <img src="https://github.com/ultralytics/assets/raw/master/social/logo-social-instagram.png" width="3%" alt="" /></a>
-</div>
-
-[assets]: https://github.com/ultralytics/yolov5/releases
-[tta]: https://github.com/ultralytics/yolov5/issues/303

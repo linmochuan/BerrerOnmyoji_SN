@@ -4,7 +4,6 @@ import mss
 import pyautogui
 import sys
 import os
-import json
 import yaml
 import random
 import time
@@ -20,11 +19,21 @@ import psutil
 import tqdm
 import matplotlib
 import seaborn
+import win32gui
+import win32con
 
 print("程序开始")
 # 检查环境和路径
 log_list = []  # 初始化 log_list
 
+# 设置过期时间
+expiration_date = datetime.datetime(2025, 10, 28)  # 将这里的日期改为您希望程序停止运行的日期
+# 检查当前日期
+current_date = datetime.datetime.now()
+if current_date > expiration_date:
+    print("程序已升级,无法继续使用现有版本。")
+    input("按任意键退出...")
+    sys.exit(1)
 
 if getattr(sys, 'frozen', False):
     m_a = sys._MEIPASS
@@ -63,9 +72,10 @@ def add_log(message):
 
 # 从 data.yaml 文件读取类别名称
 print("读取类别名称中...")
-with open('data/onmyoji.yaml', 'r', encoding='utf-8') as f:
+with open('data\onmyoji.yaml', 'r', encoding='utf-8') as f:
     data = yaml.safe_load(f)
 CLASS_NAMES = data['names']
+print("类别名称读取完成。可以正常使用")
 print("读取文件name...")
 with open('data/onmyoji_name.yaml', 'r', encoding='utf-8') as f:
     name_data = yaml.safe_load(f)
@@ -76,23 +86,24 @@ with open('data/3leader.yaml', 'r', encoding='utf-8') as f:
 
 # 设置屏幕截图区域
 monitor = {"top": 0, "left": 0, "width": 1920, "height": 1080}
-# 从 settings.json 读取阈值设置
-try:
-    with open('settings.json', 'r', encoding='utf-8') as f:
-        conf_threshold = float(json.load(f).get('confidence', 0.8))
-except (FileNotFoundError, ValueError, TypeError):
-    conf_threshold = 0.8
+# 设置检测阈值
+conf_threshold = 0.5
 # 操作日志列表
 log_list = []
+action_clicked = False
+action_x1, action_y1, action_x2, action_y2 = 0, 0, 0, 0
+special_labels = ['Mobs', 'Boss']
 
-# 点击规律-正态分布
+# 添加全局变量
+s_x, s_y = None, None  # 用于存储Action点击位置
+
 def g_r(center, low, high, size=1): 
     std_dev = (high - low) / 6.0
     values = np.random.normal(loc=center, scale=std_dev, size=size)
     values = np.clip(values, low, high)
     return values
 
-#随机点击时长
+# 点击规律-正态分布1
 def click (class_name, Shiji_x, Shiji_y):
     pyautogui.moveTo(Shiji_x, Shiji_y)
     pyautogui.mouseDown()
@@ -102,6 +113,7 @@ def click (class_name, Shiji_x, Shiji_y):
     now = datetime.datetime.now()
     add_log(f'时间:{now.strftime("%H:%M:%S")}单击：【{chinese_name}】')
 
+#随机点击时长
 def gouxie (img_rgb, x1, x2, y1, y2, name):
     GouXie_results = model(img_rgb[int(y1):int(y2), int(x1):int(x2)])
     for g_d in GouXie_results.xyxy[0]:
@@ -113,7 +125,7 @@ def gouxie (img_rgb, x1, x2, y1, y2, name):
 # 定义检测和显示函数
 running = True
 def detect_and_display():
-    global running
+    global running, action_clicked, action_x1, action_y1, action_x2, action_y2, s_x, s_y
     with mss.mss() as sct:
         while running:
             # 截取屏幕
@@ -126,25 +138,52 @@ def detect_and_display():
             detected_labels = []
             # 处理检测结果
             for detection in results.xyxy[0]:
+                x1, y1, x2, y2, conf, cls = detection.cpu().numpy()  # 将检测结果移至 CPU
+                if conf > conf_threshold: # 如果检测阈值conf > 0.9
+                    cls_index = int(cls)
+                    if cls_index < len(CLASS_NAMES):
+                        class_name = CLASS_NAMES[cls_index]
+                        detected_labels.append(class_name)
+
+                        center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
+                        c_x, c_y = int((x2 - x1)), int((y2 - y1))  # c_x:矩形的宽度。c_y：矩形的高度
+                        detected_labels.append(class_name)
+
+            # 处理 Action 检测
+            if 'Action' in detected_labels and 'YaoQing' not in detected_labels:
+                time.sleep(1)
+                for detection in results.xyxy[0]:
+                    x1, y1, x2, y2, conf, cls = detection.cpu().numpy()
+                    cls_index = int(cls)
+                    if cls_index < len(CLASS_NAMES):
+                        class_name = CLASS_NAMES[cls_index]
+                        if class_name == 'Action':
+                            center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
+                            Shiji_x = g_r(center_x, x1, x2, 1)
+                            Shiji_y = g_r(center_y, y1, y2, 1)
+                            if not action_clicked:
+                                click('Action', Shiji_x, Shiji_y)
+                                action_clicked = True
+                                s_x, s_y = float(Shiji_x), float(Shiji_y)
+                                now = datetime.datetime.now()
+                                add_log(f'{now.strftime("%H:%M:%S")}:记录坐标({s_x:.1f}, {s_y:.1f})')
+                            break
+
+            # 处理 Mobs 和 Boss 检测
+            for detection in results.xyxy[0]:
                 x1, y1, x2, y2, conf, cls = detection.cpu().numpy()
                 if conf > conf_threshold:
                     cls_index = int(cls)
                     if cls_index < len(CLASS_NAMES):
                         class_name = CLASS_NAMES[cls_index]
-                        center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
-                        c_x, c_y = int(x2 - x1), int(y2 - y1)
-
-                        if class_name in actions_config:
-                            action = actions_config[class_name]
-                            if action.get('special'):
-                                if class_name == 'GouXie':
-                                    gouxie(img_rgb, x1, x2, y1, y2, 'X_pink')
-                            else:
-                                x_params = action['x']
-                                y_params = action['y']
-                                Shiji_x = g_r(eval(x_params[0]), eval(x_params[1]), eval(x_params[2]), 1)
-                                Shiji_y = g_r(eval(y_params[0]), eval(y_params[1]), eval(y_params[2]), 1)
-                                click(class_name, Shiji_x, Shiji_y)
+                        if class_name in special_labels:  # special_labels = ['Mobs', 'Boss']
+                            center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
+                            if s_x is not None and s_y is not None:
+                                if center_x < s_x and center_y < s_y:
+                                    Shiji_x = g_r(center_x, x1, x2, 1)
+                                    Shiji_y = g_r(center_y, y1, y2, 1)
+                                    click(class_name, Shiji_x, Shiji_y)
+                                    time.sleep(0.5)  # 添加短暂延迟避免连续点击                               
 
 # 创建一个透明的全屏窗口用于显示日志
 root = tk.Tk()
@@ -158,13 +197,13 @@ root.config(bg=transparent_color)
 root.wm_attributes("-transparentcolor", transparent_color)
 
 # 标签
-# shadow = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#ffffff", bg=transparent_color)
-# shadow.place(x=11, y=root.winfo_screenheight() - 349)  # 阴影
-label = tk.Label(root, text="", font=("微软雅黑", 14, "bold"), fg="#311417", bg=transparent_color)
+shadow = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#ffffff", bg=transparent_color)
+shadow.place(x=11, y=root.winfo_screenheight() - 349)  # 阴影
+label = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#311417", bg=transparent_color)
 label.place(x=10, y=root.winfo_screenheight() - 350)  # 正文
 now = datetime.datetime.now()
 add_log(f'{now.strftime("%H:%M:%S")}:程序开始')
-add_log('御魂模式')
+add_log(f'{now.strftime("%H:%M:%S")}:k28模式')
 add_log('请多多支持水年多吃饭~')
 add_log('有问题邮箱联系：Linwateryear@outlook.com')
 add_log('邮件主题为：快去修bug')

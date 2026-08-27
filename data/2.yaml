@@ -29,6 +29,9 @@ actions:
   Red_Egg_end:
     x: [center_x+(1.5*c_x), x1+(1.5*c_x), x2+(1.5*c_x)]
     y: [center_y, y1, y2]
+  gold_egg:
+    x: [center_x+(1.5*c_x), x1+(1.5*c_x), x2+(1.5*c_x)]
+    y: [center_y, y1, y2]
   GouXie:
     special: true
   Action:

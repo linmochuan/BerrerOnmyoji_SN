@@ -4,7 +4,6 @@ import mss
 import pyautogui
 import sys
 import os
-import json
 import yaml
 import random
 import time
@@ -20,6 +19,9 @@ import psutil
 import tqdm
 import matplotlib
 import seaborn
+import win32gui
+import win32con
+import math
 
 print("程序开始")
 # 检查环境和路径
@@ -50,8 +52,10 @@ if not os.path.exists(output_dir):
 
 # 定义显示日志的函数
 def display_log():
-    global log_list
+    global log_list, root
     log_text = "\n".join(log_list)
+    # 更新标签文本
+    shadow.config(text=log_text)
     label.config(text=log_text)
 
 # 在透明窗口的左下角显示日志
@@ -78,14 +82,16 @@ with open('data/3leader.yaml', 'r', encoding='utf-8') as f:
 
 # 设置屏幕截图区域
 monitor = {"top": 0, "left": 0, "width": 1920, "height": 1080}
-# 从 settings.json 读取阈值设置
-try:
-    with open('settings.json', 'r', encoding='utf-8') as f:
-        conf_threshold = float(json.load(f).get('confidence', 0.8))
-except (FileNotFoundError, ValueError, TypeError):
-    conf_threshold = 0.8
+# 设置检测阈值
+conf_threshold = 0.5
 # 操作日志列表
 log_list = []
+action_clicked = False
+action_x1, action_y1, action_x2, action_y2 = 0, 0, 0, 0
+special_labels = ['Mobs', 'Boss']
+
+# 添加全局变量
+s_x, s_y = None, None  # 用于存储Action点击位置
 
 def g_r(center, low, high, size=1): 
     std_dev = (high - low) / 6.0
@@ -115,70 +121,136 @@ def gouxie (img_rgb, x1, x2, y1, y2, name):
 # 定义检测和显示函数
 running = True
 def detect_and_display():
-    global running
-    with mss.mss() as sct:
+    global running, action_clicked
+    window = TransparentWindow()
+    with mss.MSS() as sct:
         while running:
             # 截取屏幕
             img = np.array(sct.grab(monitor))
-            # 转换颜色空间，从BGR到RGB
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            # 使用YOLOv5模型进行检测
+            
+            # 用YOLOv5模型进行检测
             results = model(img_rgb)
-            # 临时列表保存当前帧检测到的标签
-            detected_labels = []
+            
             # 处理检测结果
             for detection in results.xyxy[0]:
-                x1, y1, x2, y2, conf, cls = detection.cpu().numpy()  # 将检测结果移至 CPU
-                if conf > conf_threshold: # 如果检测阈值conf > 0.9
-                    cls_index = int(cls)
-                    if cls_index < len(CLASS_NAMES):
-                        class_name = CLASS_NAMES[cls_index]
-                        center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
-                        c_x, c_y = int((x2 - x1)), int((y2 - y1))  # c_x:矩形的宽度。c_y：矩形的高度
-                        detected_labels.append(class_name)
-                        # 偏移点击
-                        if class_name in ('QingMing_end', 'O_SS_End'):
-                            Shiji_x = g_r(center_x, x1, x2, 1)
-                            Shiji_y = g_r(center_y-2*c_y, y1-2*c_y, y2-2*c_y, 1)
-                            click(class_name, Shiji_x, Shiji_y)
-                        elif class_name == 'eat_ghost':
-                            Shiji_x = g_r(center_x, x1, x2, 1)
-                            Shiji_y = g_r(center_y + (3 * c_y), center_y + c_y, center_y + (3 * c_y),1)
-                            click(class_name, Shiji_x, Shiji_y)
-                        elif class_name == 'YaoQing':
-                            add_log(f'时间:{now.strftime("%H:%M:%S")}等待队友....')
-                        elif class_name in( 'X_pink', 'Y_QueRen'):
-                            Shiji_x = g_r(center_x, x1, x2, 1)
-                            Shiji_y = g_r(center_y, y1, y2 ,1)
-                            click(class_name, Shiji_x, Shiji_y)
-                        elif class_name in( 'Get_reward', 'Red_Egg_end'):
-                            Shiji_x = g_r(center_x+(1.5*c_x), x1+(1.5*c_x), x2+(1.5*c_x), 1)
-                            Shiji_y = g_r(center_y, y1, y2, 1)
-                            click(class_name, Shiji_x, Shiji_y)
-                        elif class_name == 'GouXie' : # 图片里面找图
-                            GouXie_results = model(img_rgb[int(y1):int(y2), int(x1):int(x2)])
-                            for g_d in GouXie_results.xyxy[0]:
-                                gx_1, gy_1, gx2, gy2, gconf, gcls = g_d.cpu().numpy()  # 将检测结果移至 CPU
-                                if gconf > conf_threshold and CLASS_NAMES[int(gcls)] == 'X_pink':
-                                    g_center_x, g_center_y = int(gx_1 + gx2) / 2 + x1, int(gy_1 + gy2) / 2 + y1
-                                    click('X_pink', g_center_x, g_center_y)
+                x1, y1, x2, y2, conf, cls = detection.cpu().numpy()
+                if conf > conf_threshold:
+                    class_name = CLASS_NAMES[int(cls)]
+                    window.draw_detection(
+                        int(x1), int(y1), int(x2), int(y2),
+                        class_name, conf
+                    )
+            
+            # 更新窗口
+            window.root.update()
+            
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-            # 检查是否同时检测到ShiShenLu和Email且没有Mobs
-            if 'Action' in detected_labels and 'YaoQing' not in detected_labels:
-                time.sleep(1)
-                for detection in results.xyxy[0]:
-                    x1, y1, x2, y2, conf, cls = detection.cpu().numpy()
-                    center_x, center_y = int((x1 + x2) / 2), int((y1 + y2) / 2)
-                    c_x, c_y = int((x2 - x1)), int((y2 - y1))  # c_x:矩形的宽度。c_y：矩形的高度
-                    cls_index = int(cls)
-                    if cls_index < len(CLASS_NAMES):
-                        class_name = CLASS_NAMES[cls_index]
-                        if class_name == 'Action':
-                            Shiji_x = g_r(center_x, x1, x2, 1)
-                            Shiji_y = g_r(center_y, y1, y2, 1)
-                            click('Action', Shiji_x, Shiji_y)
-            time.sleep(1)
+class TransparentWindow:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.attributes("-topmost", True)
+        self.root.attributes("-fullscreen", True)
+        self.root.attributes("-alpha", 0.3)
+        self.root.overrideredirect(True)
+        
+        # 创建Canvas
+        self.canvas = tk.Canvas(self.root, highlightthickness=0)
+        self.canvas.pack(fill='both', expand=True)
+        
+        # 设置透明背景
+        transparent_color = '#000001'
+        self.canvas.configure(bg=transparent_color)
+        self.root.wm_attributes("-transparentcolor", transparent_color)
+        
+        self.target_window = None
+        self.running = True
+        # 添加一个变量来跟踪所有绘制的图形ID
+        self.current_drawings = []
 
+    def get_window_info(self, x, y):
+        """获取指定坐标所在窗口的信息"""
+        hwnd = win32gui.WindowFromPoint((x, y))
+        if hwnd:
+            window_text = win32gui.GetWindowText(hwnd)
+            rect = win32gui.GetWindowRect(hwnd)
+            return {
+                'hwnd': hwnd,
+                'title': window_text,
+                'rect': rect
+            }
+        return None
+
+    def is_point_in_window(self, x, y, window_info):
+        """检查点是否在指定窗口内"""
+        if window_info and 'rect' in window_info:
+            left, top, right, bottom = window_info['rect']
+            return left <= x <= right and top <= y <= bottom
+        return False
+
+    def draw_window_border(self, window_info):
+        # 清除所有之前绘制的图形
+        for item_id in self.current_drawings:
+            self.canvas.delete(item_id)
+        self.current_drawings.clear()
+        
+        if window_info:
+            left, top, right, bottom = window_info['rect']
+            
+            # 获取当前时间用于颜色渐变
+            t = time.time()
+            r = int(255 * (math.sin(t) + 1) / 2)
+            g = int(255 * (math.sin(t + 2.09) + 1) / 2)
+            b = int(255 * (math.sin(t + 4.18) + 1) / 2)
+            color = f'#{r:02x}{g:02x}{b:02x}'
+            
+            # 保存所有新绘制图形的ID
+            rect_id = self.canvas.create_rectangle(
+                left, top, right, bottom,
+                outline=color,
+                width=10
+            )
+            self.current_drawings.append(rect_id)
+            
+            bg_id = self.canvas.create_rectangle(
+                left, top-30, left+300, top,
+                fill=color,
+                outline=color
+            )
+            self.current_drawings.append(bg_id)
+            
+            text_id = self.canvas.create_text(
+                left+5, top-15,
+                text=f"这是队长的窗口",
+                fill='white',
+                anchor='w',
+                font=('SimHei', 12, 'bold')
+            )
+            self.current_drawings.append(text_id)
+
+    def draw_detection(self, x1, y1, x2, y2, label, conf):
+        center_x = int((x1 + x2) / 2)
+        center_y = int((y1 + y2) / 2)
+
+        # 如果检测到Action标签
+        if label == 'Action':
+            window_info = self.get_window_info(center_x, center_y)
+            if window_info:
+                self.target_window = window_info
+                self.canvas.delete('window_border')  # 清除之前的边框
+                self.draw_window_border(window_info)  # 绘制新的边框
+                now = datetime.datetime.now()
+                add_log(f'{now.strftime("%H:%M:%S")}:记录窗口: {window_info["title"]}')
+
+        # 对于Mobs和Boss的处理
+        elif label in ['Mobs', 'Boss']:
+            if self.target_window and self.is_point_in_window(center_x, center_y, self.target_window):
+                Shiji_x = g_r(center_x, x1, x2, 1)
+                Shiji_y = g_r(center_y, y1, y2, 1)
+                click(label, Shiji_x, Shiji_y)
+                time.sleep(0.5)
 
 # 创建一个透明的全屏窗口用于显示日志
 root = tk.Tk()
@@ -187,19 +259,18 @@ root.attributes("-topmost", True)  # 将窗口置于顶层
 root.overrideredirect(True)  # 移除窗口装饰
 
 # 透明背景
-transparent_color = '#00FF00'
+transparent_color = "#ffffff"
 root.config(bg=transparent_color)
 root.wm_attributes("-transparentcolor", transparent_color)
 
 # 标签
-shadow = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#ffffff", bg=transparent_color)
+shadow = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#000000", bg=transparent_color)
 shadow.place(x=11, y=root.winfo_screenheight() - 349)  # 阴影
-label = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#311417", bg=transparent_color)
+label = tk.Label(root, text="", font=("微软雅黑", 15, "bold"), fg="#000000", bg=transparent_color)
 label.place(x=10, y=root.winfo_screenheight() - 350)  # 正文
 now = datetime.datetime.now()
 add_log(f'{now.strftime("%H:%M:%S")}:程序开始')
-add_log(f'{now.strftime("%H:%M:%S")}:三人组队模式')
-add_log('请多多支持水年多吃饭~')
+add_log('请多多支持荇子~')
 add_log('有问题邮箱联系：Linwateryear@outlook.com')
 add_log('邮件主题为：快去修bug')
 add_log('如果识别不到图片请多截几张图一并发送，图片要整个游戏界面')

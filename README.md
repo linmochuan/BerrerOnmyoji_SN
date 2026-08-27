@@ -1,3 +1,15 @@
+<div align="center">
+
+    <a align="center" href="https://github.com/linmochuan/BerrerOnmyoji_SN" target="_blank">lin RPA</a>
+
+    简体中文 | [日本語](README_JP.md)
+
+    <br>
+
+    <div>Windows 桌面 Excel 自动化工具</div>
+
+</div>
+
 # lin RPA
 
 `lin RPA` 是一个面向 Windows 桌面程序的 Python 自动化工具，将屏幕识别、图片模板查找、鼠标操作、Excel 任务编排和 YOLO 模型识别组合在一起。

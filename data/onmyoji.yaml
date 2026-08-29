@@ -59,7 +59,7 @@ names:
   52: chest                 #探索里发光的宝箱
   53: box                   #探索外的红色箱子
   54: 30/30                 #挑战卷
-  55: other/30              #挑战卷
+  55: other/30              #挑战卷未满
   56: b_w_exit              #退出
   57: ShiShenLu             #式神录
   58: GouYu_ZhiRen          #勾玉的小纸人

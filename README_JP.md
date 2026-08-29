@@ -1,12 +1,12 @@
 <div align="center">
 
-  [简体中文](.github/README_cn.md) | 日本語
+  <h1>lin RPA</h1>
 
-  <br>
+  <p>
+    <a href="README.md">中文</a> | 日本語
+  </p>
 
-  <div>
-    Windows向け Excel ベースのデスクトップ RPA ツール
-  </div>
+  <p>Windows デスクトップ Excel 自動化ツール</p>
 
 </div>
 

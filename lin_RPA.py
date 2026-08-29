@@ -1,6 +1,7 @@
 """lin_RPA 启动器。"""
 from __future__ import annotations
 
+from dataclasses import replace
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +9,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from rpa_executor import ExcelExecutor, start_async
 from rpa_operations import DesktopOperations, StopController
-from rpa_readers import AppConfig, read_app_config, save_settings
+from rpa_readers import AppConfig, read_app_config, read_model_metadata, save_settings, validate_startup_inputs
 
 
 class LinRPAApp:
@@ -36,11 +37,13 @@ class LinRPAApp:
 
         self.excel_var = tk.StringVar()
         self.sheet_var = tk.StringVar()
+        self.model_var = tk.StringVar()
         self.screenshot_var = tk.StringVar()
         self.confidence_var = tk.StringVar(value=str(self.config.confidence))
         self.duration_var = tk.StringVar(value="0")
 
         self._path_row(frame, "Excel 文件", self.excel_var, self.choose_excel)
+        self._path_row(frame, "模型文件", self.model_var, self.choose_model)
         sheet_row = ttk.Frame(frame)
         sheet_row.pack(fill=tk.X, pady=5)
         ttk.Label(sheet_row, text="工作表", width=12).pack(side=tk.LEFT)
@@ -79,6 +82,7 @@ class LinRPAApp:
 
     def _load_values(self) -> None:
         self.excel_var.set(self.config.excel_path)
+        self.model_var.set(self.config.model_path)
         self.screenshot_var.set(self.config.screenshot_path)
         self.refresh_sheets()
 
@@ -87,6 +91,24 @@ class LinRPAApp:
         if path:
             self.excel_var.set(path)
             self.refresh_sheets()
+
+    def choose_model(self) -> None:
+        path = filedialog.askopenfilename(filetypes=[("PyTorch 模型", "*.pt;*.pth"), ("所有文件", "*.*")])
+        if path:
+            self.model_var.set(path)
+            self._sync_model_config()
+
+    def _sync_model_config(self) -> None:
+        model_path = self.model_var.get().strip()
+        if not model_path:
+            return
+        class_names, translations = read_model_metadata(model_path, self.config.root)
+        self.config = replace(
+            self.config,
+            model_path=model_path,
+            class_names=class_names,
+            class_name_to_chinese=translations,
+        )
 
     def choose_screenshot(self) -> None:
         path = filedialog.askdirectory()
@@ -108,6 +130,8 @@ class LinRPAApp:
 
     def _make_config(self) -> AppConfig:
         confidence = min(1.0, max(0.1, float(self.confidence_var.get())))
+        model_path = self.model_var.get().strip()
+        class_names, translations = read_model_metadata(model_path, self.config.root) if model_path else (self.config.class_names, self.config.class_name_to_chinese)
         config = AppConfig(
             root=self.config.root,
             confidence=confidence,
@@ -115,11 +139,12 @@ class LinRPAApp:
             sheet_name=self.sheet_var.get().strip(),
             screenshot_path=self.screenshot_var.get().strip(),
             hotkey=self.config.hotkey,
-            model_path=self.config.model_path,
-            class_names=self.config.class_names,
-            class_name_to_chinese=self.config.class_name_to_chinese,
+            model_path=model_path,
+            class_names=class_names,
+            class_name_to_chinese=translations,
             actions=self.config.actions,
         )
+        self.config = config
         save_settings(config)
         return config
 
@@ -146,16 +171,18 @@ class LinRPAApp:
 
     def start_excel(self) -> None:
         try:
+            if self.worker is not None and self.worker.is_alive():
+                messagebox.showwarning("已运行", "当前任务已经在执行中，请先停止后再启动。")
+                return
             config = self._make_config()
-            if not config.excel_path or not config.sheet_name:
-                raise ValueError("请选择 Excel 文件和工作表")
+            validate_startup_inputs(config)
             duration = int(self.duration_var.get() or 0) * 60
             self.stop_controller.reset()
             operations = DesktopOperations(self.stop_controller, self._log)
             executor = ExcelExecutor(config, operations, self._log)
             self.worker = start_async(lambda: executor.run(config.excel_path, config.sheet_name, duration))
             self._log("已启动")
-        except (OSError, ValueError) as error:
+        except (OSError, ValueError, TypeError) as error:
             messagebox.showerror("启动失败", str(error))
 
     def _start_global_hotkey(self) -> None:

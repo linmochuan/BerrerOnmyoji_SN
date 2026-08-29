@@ -23,7 +23,7 @@ import seaborn
 
 # 加载模型
 print("加载模型中...")
-model = torch.hub.load('.', 'custom', path='best.pt', source='local')
+model = torch.hub.load('.', 'custom', path='models/best.pt', source='local')
 print("模型加载完成")
 
 # 读取类别名称

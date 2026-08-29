@@ -1,12 +1,16 @@
 <div align="center">
 
-    <a align="center" href="https://github.com/linmochuan/BerrerOnmyoji_SN" target="_blank">lin RPA</a>
+  <a href="https://github.com/linmochuan/BerrerOnmyoji_SN" target="_blank">
+    <h1>lin RPA</h1>
+  </a>
 
-    简体中文 | [日本語](README_JP.md)
+  <p>
+    中文 | <a href="README_JP.md">日本語</a>
+  </p>
 
-    <br>
+  <br>
 
-    <div>Windows 桌面 Excel 自动化工具</div>
+  <div>Windows 桌面 Excel 自动化工具</div>
 
 </div>
 
@@ -319,7 +323,6 @@ pyinstaller lin_RPA.spec
 ```
 
 打包配置会包含 `best.pt`、`settings.json`、`data/*.yaml` 和 Python 模块。生成目录通常为 `dist/lin_RPA/`，移动程序时复制整个目录，不要只复制 exe 文件。
-
 
 
 
